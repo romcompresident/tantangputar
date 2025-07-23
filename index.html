@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Spinning Pie</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #c8c8c8;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+    }
+    h1 {
+      margin-top: 40px;
+      font-size: 32px;
+    }
+    #container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    #canvasWrapper {
+      position: relative;
+      width: 600px;
+      height: 600px;
+    }
+    canvas {
+      background: transparent;
+    }
+    .button-group {
+      margin-top: 5px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin: 0 10px;
+      cursor: pointer;
+      background-color: #2196f3;
+      color: white;
+      border: none;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>SPIN THE WHEEL TO GET YOUR CHALLENGE</h1>
+  <div id="container">
+    <div id="canvasWrapper">
+      <canvas id="wheel" width="600" height="600"></canvas>
+    </div>
+    <div class="button-group">
+      <button onclick="spin()">Spin</button>
+      <button onclick="stop()">Stop</button>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("wheel");
+    const ctx = canvas.getContext("2d");
+    const radius = 260;
+    let rotationAngle = 0;
+    let isSpinning = false;
+    let spinSpeed = 0;
+
+    const segments = ["Hard", "Medium", "Baby", "Hard", "Medium", "Hard", "Einstein", "Medium"];
+    const segmentPercents = [0.10, 0.20, 0.05, 0.10, 0.20, 0.10, 0.05, 0.20];
+    const segmentAngles = segmentPercents.map(p => p * 2 * Math.PI);
+
+    const colors = [
+      "#0000ff", "#00ffff", "#006400", "#ffff00",
+      "#ffa500", "#ff0000", "#ffc0cb", "#800080"
+    ];
+
+    const segmentLinks = {
+      "Hard": "https://wayground.com/join?gc=12085468",
+      "Medium": "https://wayground.com/join?gc=33007836",
+      "Easy": "https://wayground.com/join?gc=28158172",
+      "Hard": "https://wayground.com/join?gc=12085468",
+      "Medium": "https://wayground.com/join?gc=33007836",
+      "Hard": "https://wayground.com/join?gc=12085468",
+      "Einstein": "https://wayground.com/join?gc=15526108",
+      "Medium": "https://wayground.com/join?gc=33007836"
+    };
+
+    function drawWheel() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      let startAngle = rotationAngle;
+
+      for (let i = 0; i < segments.length; i++) {
+        const endAngle = startAngle + segmentAngles[i];
+
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+        ctx.fillStyle = colors[i];
+        ctx.fill();
+        ctx.stroke();
+
+        // Add text
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate((startAngle + endAngle) / 2);
+        ctx.textAlign = "right";
+        ctx.fillStyle = "white";
+        ctx.font = "bold 30px Arial";
+        ctx.fillText(segments[i], radius - 10, 10);
+        ctx.restore();
+
+        startAngle = endAngle;
+      }
+
+      // Draw arrow triangle
+      ctx.beginPath();
+      ctx.moveTo(centerX + radius + 10, centerY);
+      ctx.lineTo(centerX + radius + 30, centerY - 15);
+      ctx.lineTo(centerX + radius + 30, centerY + 15);
+      ctx.closePath();
+      ctx.fillStyle = "brown";
+      ctx.fill();
+    }
+
+    function animate() {
+      if (!isSpinning) return;
+      rotationAngle += spinSpeed;
+      rotationAngle %= 2 * Math.PI;
+      drawWheel();
+      requestAnimationFrame(animate);
+    }
+
+    function spin() {
+      if (!isSpinning) {
+        isSpinning = true;
+        spinSpeed = 0.5;
+        animate();
+      }
+    }
+
+    function stop() {
+      isSpinning = false;
+      let slowDown = spinSpeed;
+	  
+      function decelerate() {
+        if (slowDown > 0.002) {
+          rotationAngle += slowDown;
+		  rotationAngle %= 2 * Math.PI;
+          slowDown *= 0.98;
+          drawWheel();
+          requestAnimationFrame(decelerate);
+        } else {
+          rotationAngle %= 2 * Math.PI;
+		  drawWheel();
+		  detectSegment();
+        }
+      }
+      decelerate();
+    }
+
+    function detectSegment() {
+      const pointerAngle = (0 - rotationAngle + 2 * Math.PI) % (2 * Math.PI);
+	  let cumulativeAngle = 0;
+      
+	  for (let i = 0; i < segments.length; i++) {
+		const segmentAngle = segmentAngles[i];
+		const startAngle = cumulativeAngle;
+		const endAngle = cumulativeAngle + segmentAngle;
+        
+		if (pointerAngle >= startAngle && pointerAngle < endAngle) {
+          const segment = segments[i];
+		  console.log("Detected segment:", segment);
+          
+		  const link = segmentLinks[segment];
+		  if (link) {
+            setTimeout(() => {
+             window.open(link, "_blank");
+            }, 2000);
+          }
+          return;
+        }
+       cumulativeAngle += segmentAngle;
+	  }
+    }
+
+    drawWheel();
+  </script>
+</body>
+</html>
